@@ -101,7 +101,7 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         titleLayer.string = title
         titleLayer.frame =  CGRect(x: pad, y: pad, width: size.width - pad * 2, height: size.height - pad * 2)
         let fontName: CFString = "GillSans-UltraBold" as CFString
-        let fontSize: CGFloat = 18
+        let fontSize: CGFloat = 24
         titleLayer.font = CTFontCreateWithName(fontName, fontSize, nil)
         titleLayer.alignmentMode = kCAAlignmentCenter
         titleLayer.foregroundColor = UIColor.white.cgColor
@@ -164,13 +164,22 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         else {
             naturalSizeFirst = videoAssetTrack.naturalSize
         }
+        let renderSize = naturalSizeFirst
+        //let renderFloat = fminf(Float(naturalSizeFirst.width), Float(naturalSizeFirst.height))
+        //let renderSize = CGSize(width: CGFloat(renderFloat), height: CGFloat(renderFloat))
+        /*if naturalSizeFirst.height >= naturalSizeFirst.width {
+            renderSize = CGSize(width: naturalSizeFirst.height, height: naturalSizeFirst.height)
+        }
+        else {
+            renderSize = CGSize(width: naturalSizeFirst.width, height: naturalSizeFirst.width)
+        }*/
         
-        mutableVideoComposition.renderSize = CGSize(width: naturalSizeFirst.width, height: naturalSizeFirst.height)
+        
+        mutableVideoComposition.renderSize = CGSize(width: renderSize.width, height: renderSize.height)
         mutableVideoComposition.frameDuration = CMTimeMake(1,30)
         
         // Add TEXT
-        
-        applyVideoEffectsToComposition(composition: mutableVideoComposition, size: naturalSizeFirst)
+        applyVideoEffectsToComposition(composition: mutableVideoComposition, size: renderSize)
         
         // Get path
         let documentDirectory = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
