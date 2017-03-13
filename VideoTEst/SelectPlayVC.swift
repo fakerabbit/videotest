@@ -67,10 +67,6 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
     }
     
     func onSave(_ sender: UIButton) {
-        
-        //self.videoOutput()
-        //self.mergeVideoWithText()
-        //self.mergeVideoWithText2()
         self.createComposition()
     }
     
@@ -97,144 +93,31 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         }
     }
     
-    func videoOutput() {
-        
-        if self.videoAsset != nil {
-            
-            let videoAssetTrack: AVAssetTrack = self.videoAsset!.tracks(withMediaType: AVMediaTypeVideo).first! as AVAssetTrack
-            let mixComposition: AVMutableComposition = AVMutableComposition()
-            let videoTrack: AVMutableCompositionTrack = mixComposition.addMutableTrack(withMediaType: AVMediaTypeVideo, preferredTrackID: CMPersistentTrackID())
-            var videoAssetOrientation_ :UIImageOrientation = UIImageOrientation.up
-            var isVideoAssetPortrait_ :Bool = false
-            let videoTransform: CGAffineTransform = videoAssetTrack.preferredTransform
-            let videolayerInstruction: AVMutableVideoCompositionLayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack)
-            let mainInstruction: AVMutableVideoCompositionInstruction = AVMutableVideoCompositionInstruction()
-            mainInstruction.timeRange = CMTimeRangeMake(kCMTimeZero, (self.videoAsset?.duration)!)
-            
-            if videoTransform.a == 0 && videoTransform.b == 1.0 && videoTransform.c == -1.0 && videoTransform.d == 0 {
-                videoAssetOrientation_ = UIImageOrientation.right;
-                isVideoAssetPortrait_ = true;
-            }
-            if videoTransform.a == 0 && videoTransform.b == -1.0 && videoTransform.c == 1.0 && videoTransform.d == 0 {
-                videoAssetOrientation_ =  UIImageOrientation.left;
-                isVideoAssetPortrait_ = true;
-            }
-            if videoTransform.a == 1.0 && videoTransform.b == 0 && videoTransform.c == 0 && videoTransform.d == 1.0 {
-                videoAssetOrientation_ =  UIImageOrientation.up;
-            }
-            if videoTransform.a == -1.0 && videoTransform.b == 0 && videoTransform.c == 0 && videoTransform.d == -1.0 {
-                videoAssetOrientation_ = UIImageOrientation.down;
-            }
-            
-            videolayerInstruction.setTransform(videoAssetTrack.preferredTransform, at: kCMTimeZero)
-            videolayerInstruction.setOpacity(0.0, at: (self.videoAsset?.duration)!)
-            
-            mainInstruction.layerInstructions = [videolayerInstruction]
-            //mainInstruction.layerInstructions = NSArray(object: videolayerInstruction) as! [AVVideoCompositionLayerInstruction]
-            
-            let mainCompositionInst: AVMutableVideoComposition = AVMutableVideoComposition()
-            var renderWidth: CGFloat = 0
-            var renderHeight: CGFloat = 0
-            var naturalSize = videoAssetTrack.naturalSize
-            
-            if isVideoAssetPortrait_ == true {
-                naturalSize = CGSize(width: videoAssetTrack.naturalSize.height, height: videoAssetTrack.naturalSize.width)
-            }
-            
-            renderWidth = naturalSize.width
-            renderHeight = naturalSize.height
-            
-            mainCompositionInst.renderSize = CGSize(width: renderWidth, height: renderHeight)
-            mainCompositionInst.instructions = [mainInstruction]
-            //mainCompositionInst.instructions = NSArray(object: mainInstruction) as! [AVVideoCompositionInstructionProtocol]
-            mainCompositionInst.frameDuration = CMTimeMake(1, 30)
-            
-            //self.applyVideoEffectsToComposition(composition: mainCompositionInst, size: naturalSize)
-            
-            let subtitle1Text = CATextLayer()
-            subtitle1Text.font = UIFont(name: "GillSans-UltraBold", size: 40)
-            subtitle1Text.frame = CGRect(x: 0, y: 0, width: naturalSize.width, height: 100)
-            subtitle1Text.string = "SIRACHA!"
-            subtitle1Text.alignmentMode = kCAAlignmentCenter
-            subtitle1Text.foregroundColor = UIColor.lightText.cgColor
-            
-            // The usual overlay
-            let overlayLayer = CALayer()
-            overlayLayer.addSublayer(subtitle1Text)
-            overlayLayer.frame = CGRect(x: 0, y: 0, width: naturalSize.width, height: naturalSize.height)
-            overlayLayer.masksToBounds = true
-            
-            let parentLayer = CALayer()
-            parentLayer.frame = CGRect(x: 0, y: 0, width: naturalSize.width, height: naturalSize.height)
-            let videoLayer = CALayer()
-            videoLayer.frame = CGRect(x: 0, y: 0, width: naturalSize.width, height: naturalSize.height)
-            
-            parentLayer.addSublayer(videoLayer)
-            parentLayer.addSublayer(overlayLayer)
-            
-            mainCompositionInst.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
-            
-            //let documentsPath: NSString = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as NSString
-            //let randomNum = arc4random() % 1000
-            //let myPathDocs = documentsPath.strings(byAppendingPaths: ["FinalVideo.mov"])
-            //let url = URL(fileURLWithPath: myPathDocs[0])
-            
-            /*let exporter = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality)
-            debugPrint("url export: \(url)")
-            exporter?.outputURL = url
-            exporter?.outputFileType = AVFileTypeQuickTimeMovie
-            exporter?.shouldOptimizeForNetworkUse = true
-            exporter?.videoComposition = mainCompositionInst*/
-            
-            let documentDirectory = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateStyle = .long
-            dateFormatter.timeStyle = .short
-            let date = dateFormatter.string(from: NSDate() as Date)
-            let savePath = (documentDirectory as NSString).appendingPathComponent("mergeVideo-\(date).mov")
-            let url = NSURL(fileURLWithPath: savePath)
-            
-            guard let exporter = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality) else { return }
-            exporter.outputURL = url as URL
-            exporter.outputFileType = AVFileTypeQuickTimeMovie
-            exporter.shouldOptimizeForNetworkUse = true
-            exporter.videoComposition = mainCompositionInst
-            
-            exporter.exportAsynchronously() {
-                
-                let player:AVPlayer! = AVPlayer(url: exporter.outputURL!)
-                self.customView.playerLayer.player = player
-                player.play()
-                DispatchQueue.main.async() { _ in
-                    self.exportDidFinish(session: exporter)
-                }
-            }
-        }
-    }
-    
     func applyVideoEffectsToComposition(composition: AVMutableVideoComposition, size: CGSize) {
         
-        // Text layer
-        let subtitle1Text = CATextLayer()
-        subtitle1Text.font = UIFont(name: "GillSans-UltraBold", size: 40)
-        subtitle1Text.frame = CGRect(x: 0, y: 0, width: size.width, height: 100)
-        subtitle1Text.string = self.customView.textField.text
-        subtitle1Text.alignmentMode = kCAAlignmentCenter
-        subtitle1Text.foregroundColor = UIColor.lightText.cgColor
+        let pad: CGFloat = 5
+        let title = self.customView.textField.text
+        let titleLayer = CATextLayer()
+        titleLayer.string = title
+        titleLayer.frame =  CGRect(x: pad, y: pad, width: size.width - pad * 2, height: size.height - pad * 2)
+        let fontName: CFString = "GillSans-UltraBold" as CFString
+        let fontSize: CGFloat = 18
+        titleLayer.font = CTFontCreateWithName(fontName, fontSize, nil)
+        titleLayer.alignmentMode = kCAAlignmentCenter
+        titleLayer.foregroundColor = UIColor.white.cgColor
         
-        // The usual overlay
-        let overlayLayer = CALayer()
-        overlayLayer.addSublayer(subtitle1Text)
-        overlayLayer.frame = CGRect(x: 0, y: 0, width: size.width, height: size.height)
-        overlayLayer.masksToBounds = true
+        let backgroundLayer = CALayer()
+        backgroundLayer.frame = CGRect(x: 0, y: 0, width: size.width, height: size.height)
+        backgroundLayer.masksToBounds = true
+        backgroundLayer.addSublayer(titleLayer)
         
         let parentLayer = CALayer()
-        parentLayer.frame = CGRect(x: 0, y: 0, width: size.width, height: size.height)
         let videoLayer = CALayer()
-        videoLayer.frame = CGRect(x: 0, y: 0, width: size.width, height: size.height)
+        parentLayer.frame =  CGRect(x: 0, y: 0, width: size.width, height: size.height)
+        videoLayer.frame =  CGRect(x: 0, y: 0, width: size.width, height: size.height)
         
         parentLayer.addSublayer(videoLayer)
-        parentLayer.addSublayer(overlayLayer)
+        parentLayer.addSublayer(backgroundLayer)
         
         composition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
     }
@@ -287,30 +170,7 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         
         // Add TEXT
         
-        let title = String("SIRACHA!")
-        let titleLayer = CATextLayer()
-        titleLayer.string = title
-        titleLayer.frame =  CGRect(x: 0, y: 0, width: naturalSizeFirst.width, height: naturalSizeFirst.height)
-        let fontName: CFString = "GillSans-UltraBold" as CFString
-        let fontSize = CGFloat(36)
-        titleLayer.font = CTFontCreateWithName(fontName, fontSize, nil)
-        titleLayer.alignmentMode = kCAAlignmentCenter
-        titleLayer.foregroundColor = UIColor.white.cgColor
-        
-        let backgroundLayer = CALayer()
-        backgroundLayer.frame = CGRect(x: 0, y: 0, width: naturalSizeFirst.width, height: naturalSizeFirst.height)
-        backgroundLayer.masksToBounds = true
-        backgroundLayer.addSublayer(titleLayer)
-        
-        let parentLayer = CALayer()
-        let videoLayer = CALayer()
-        parentLayer.frame =  CGRect(x: 0, y: 0, width: naturalSizeFirst.width, height: naturalSizeFirst.height)
-        videoLayer.frame =  CGRect(x: 0, y: 0, width: naturalSizeFirst.width, height: naturalSizeFirst.height)
-        
-        parentLayer.addSublayer(videoLayer)
-        parentLayer.addSublayer(backgroundLayer)
-        
-        mutableVideoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
+        applyVideoEffectsToComposition(composition: mutableVideoComposition, size: naturalSizeFirst)
         
         // Get path
         let documentDirectory = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
@@ -330,8 +190,9 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         
         // 5 - Perform the Export
         exporter.exportAsynchronously() {
-            DispatchQueue.main.async() { _ in
-                self.exportDidFinish(session: exporter)
+            
+            DispatchQueue.main.async() { [weak self] _ in
+                self?.exportDidFinish(session: exporter)
             }
         }
     }
@@ -342,6 +203,9 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         
         if session.status == AVAssetExportSessionStatus.completed {
             let outputURL = session.outputURL
+            let player:AVPlayer! = AVPlayer(url: outputURL!)
+            self.customView.playerLayer.player = player
+            player.play()
             PHPhotoLibrary.shared().performChanges({
                 
                 PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: outputURL!)
