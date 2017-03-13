@@ -212,129 +212,6 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         }
     }
     
-    func mergeVideoWithText() {
-        
-        // 1. mergeComposition adds all the AVAssets
-        
-        let mergeComposition : AVMutableComposition = AVMutableComposition()
-        let trackVideo : AVMutableCompositionTrack = mergeComposition.addMutableTrack(withMediaType: AVMediaTypeVideo, preferredTrackID: CMPersistentTrackID())
-        
-        // 3. Source tracks
-        
-        let sourceAsset = AVURLAsset(url: self.videoURL, options: nil)
-        let sourceDuration = CMTimeRangeMake(kCMTimeZero, sourceAsset.duration)
-        let vtrack = sourceAsset.tracks(withMediaType: AVMediaTypeVideo)[0] as AVAssetTrack
-        //let vtrack = self.videoAsset!.tracks(withMediaType: AVMediaTypeVideo).first! as AVAssetTrack
-        
-        if vtrack == nil {
-            return
-        }
-        
-        let renderWidth = vtrack.naturalSize.width
-        let renderHeight = vtrack.naturalSize.height
-        let insertTime = kCMTimeZero
-        let endTime = sourceAsset.duration
-        let range = sourceDuration
-        
-        // append tracks
-        
-        //trackVideo.insertTimeRange(sourceDuration, of: vtrack, at: insertTime)
-        try! trackVideo.insertTimeRange(sourceDuration, of: vtrack, at: insertTime)
-        
-        // 4. Add text
-        
-        let themeVideoComposition : AVMutableVideoComposition = AVMutableVideoComposition(propertiesOf: sourceAsset)
-        
-        // 4.1 - Create AVMutableVideoCompositionInstruction
-        
-        var compositionInstructions = [AVMutableVideoCompositionInstruction]()
-        
-        let mainInstruction: AVMutableVideoCompositionInstruction = AVMutableVideoCompositionInstruction()
-        mainInstruction.timeRange = range
-        
-        // 4.2 - Create an AVMutableVideoCompositionLayerInstruction for the video track and fix the orientation.
-        
-        //let videolayerInstruction : AVMutableVideoCompositionLayerInstruction = AVMutableVideoCompositionLayerInstruction()
-        //let videolayerInstruction = AVMutableVideoCompositionLayerInstruction(vtrack)
-        let videolayerInstruction: AVMutableVideoCompositionLayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: vtrack)
-        videolayerInstruction.setTransform(trackVideo.preferredTransform, at: insertTime)
-        videolayerInstruction.setOpacity(0.0, at: endTime)
-        
-        // 4.3 - Add instructions
-        
-        mainInstruction.layerInstructions = [videolayerInstruction]
-        
-        compositionInstructions.append(mainInstruction)
-        
-        themeVideoComposition.renderScale = 1.0
-        themeVideoComposition.renderSize = CGSize(width: renderWidth, height: renderHeight)
-        themeVideoComposition.frameDuration = CMTimeMake(1, 30)
-        themeVideoComposition.instructions = compositionInstructions
-        
-        // add the theme
-        
-        // setup variables
-        
-        // add text
-        
-        let title = String("SIRACHA!")
-        
-        let titleLayer = CATextLayer()
-        titleLayer.string = title
-        titleLayer.frame =  CGRect(x: 0, y: 0, width: renderWidth, height: renderHeight)
-        let fontName: CFString = "GillSans-UltraBold" as CFString
-        let fontSize = CGFloat(36)
-        titleLayer.font = CTFontCreateWithName(fontName, fontSize, nil)
-        titleLayer.alignmentMode = kCAAlignmentCenter
-        titleLayer.foregroundColor = UIColor.white.cgColor
-        
-        let backgroundLayer = CALayer()
-        backgroundLayer.frame = CGRect(x: 0, y: 0, width: renderWidth, height: renderHeight)
-        backgroundLayer.masksToBounds = true
-        backgroundLayer.addSublayer(titleLayer)
-        
-        // 2. set parent layer and video layer
-        
-        let parentLayer = CALayer()
-        let videoLayer = CALayer()
-        parentLayer.frame =  CGRect(x: 0, y: 0, width: renderWidth, height: renderHeight)
-        videoLayer.frame =  CGRect(x: 0, y: 0, width: renderWidth, height: renderHeight)
-        
-        parentLayer.addSublayer(videoLayer)
-        parentLayer.addSublayer(backgroundLayer)
-        
-        // 3. make animation
-        
-        //themeVideoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
-        
-        // export to output url
-        
-        let documentDirectory = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .long
-        dateFormatter.timeStyle = .short
-        let date = dateFormatter.string(from: NSDate() as Date)
-        let savePath = (documentDirectory as NSString).appendingPathComponent("mergeVideo-\(date).mov")
-        let url = NSURL(fileURLWithPath: savePath)
-        
-        guard let exporter = AVAssetExportSession(asset: mergeComposition, presetName: AVAssetExportPresetHighestQuality) else { return }
-        exporter.outputURL = url as URL
-        exporter.outputFileType = AVFileTypeQuickTimeMovie
-        exporter.shouldOptimizeForNetworkUse = true
-        exporter.videoComposition = themeVideoComposition
-        //exporter.videoComposition = mergeComposition
-        
-        exporter.exportAsynchronously() {
-            
-            let player:AVPlayer! = AVPlayer(url: exporter.outputURL!)
-            self.customView.playerLayer.player = player
-            player.play()
-            DispatchQueue.main.async() { _ in
-                self.exportDidFinish(session: exporter)
-            }
-        }
-    }
-    
     func applyVideoEffectsToComposition(composition: AVMutableVideoComposition, size: CGSize) {
         
         // Text layer
@@ -360,127 +237,6 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         parentLayer.addSublayer(overlayLayer)
         
         composition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
-    }
-    
-    func mergeVideoWithText2() {
-        
-        // 1. mergeComposition adds all the AVAssets
-        
-        let mergeComposition : AVMutableComposition = AVMutableComposition()
-        let trackVideo : AVMutableCompositionTrack = mergeComposition.addMutableTrack(withMediaType: AVMediaTypeVideo, preferredTrackID: CMPersistentTrackID())
-        
-        // 3. Source tracks
-        
-        let sourceDuration = CMTimeRangeMake(kCMTimeZero, (self.videoAsset?.duration)!)
-        let vtrack = (self.videoAsset?.tracks(withMediaType: AVMediaTypeVideo)[0])! as AVAssetTrack
-        //let vtrack = self.videoAsset!.tracks(withMediaType: AVMediaTypeVideo).first! as AVAssetTrack
-        
-        if vtrack == nil {
-            return
-        }
-        
-        let renderWidth = vtrack.naturalSize.width
-        let renderHeight = vtrack.naturalSize.height
-        let insertTime = kCMTimeZero
-        let endTime = self.videoAsset?.duration
-        let range = sourceDuration
-        
-        // append tracks
-        
-        //trackVideo.insertTimeRange(sourceDuration, of: vtrack, at: insertTime)
-        try! trackVideo.insertTimeRange(sourceDuration, of: vtrack, at: insertTime)
-        
-        // 4. Add text
-        
-        let themeVideoComposition : AVMutableVideoComposition = AVMutableVideoComposition(propertiesOf: self.videoAsset!)
-        
-        // 4.1 - Create AVMutableVideoCompositionInstruction
-        
-        var compositionInstructions = [AVMutableVideoCompositionInstruction]()
-        
-        let mainInstruction: AVMutableVideoCompositionInstruction = AVMutableVideoCompositionInstruction()
-        mainInstruction.timeRange = range
-        
-        // 4.2 - Create an AVMutableVideoCompositionLayerInstruction for the video track and fix the orientation.
-        
-        //let videolayerInstruction : AVMutableVideoCompositionLayerInstruction = AVMutableVideoCompositionLayerInstruction()
-        //let videolayerInstruction = AVMutableVideoCompositionLayerInstruction(vtrack)
-        let videolayerInstruction: AVMutableVideoCompositionLayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: vtrack)
-        videolayerInstruction.setTransform(trackVideo.preferredTransform, at: insertTime)
-        videolayerInstruction.setOpacity(0.0, at: endTime!)
-        
-        // 4.3 - Add instructions
-        
-        mainInstruction.layerInstructions = [videolayerInstruction]
-        
-        compositionInstructions.append(mainInstruction)
-        
-        themeVideoComposition.renderScale = 1.0
-        themeVideoComposition.renderSize = CGSize(width: renderWidth, height: renderHeight)
-        themeVideoComposition.frameDuration = CMTimeMake(1, 30)
-        themeVideoComposition.instructions = compositionInstructions
-        
-        // add the theme
-        
-        // setup variables
-        
-        // add text
-        
-        let title = String("SIRACHA!")
-        
-        let titleLayer = CATextLayer()
-        titleLayer.string = title
-        titleLayer.frame =  CGRect(x: 0, y: 0, width: renderWidth, height: renderHeight)
-        let fontName: CFString = "GillSans-UltraBold" as CFString
-        let fontSize = CGFloat(36)
-        titleLayer.font = CTFontCreateWithName(fontName, fontSize, nil)
-        titleLayer.alignmentMode = kCAAlignmentCenter
-        titleLayer.foregroundColor = UIColor.white.cgColor
-        
-        let backgroundLayer = CALayer()
-        backgroundLayer.frame = CGRect(x: 0, y: 0, width: renderWidth, height: renderHeight)
-        backgroundLayer.masksToBounds = true
-        backgroundLayer.addSublayer(titleLayer)
-        
-        // 2. set parent layer and video layer
-        
-        let parentLayer = CALayer()
-        let videoLayer = CALayer()
-        parentLayer.frame =  CGRect(x: 0, y: 0, width: renderWidth, height: renderHeight)
-        videoLayer.frame =  CGRect(x: 0, y: 0, width: renderWidth, height: renderHeight)
-        
-        parentLayer.addSublayer(videoLayer)
-        parentLayer.addSublayer(backgroundLayer)
-        
-        // 3. make animation
-        
-        themeVideoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
-        
-        // export to output url
-        
-        let documentDirectory = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .long
-        dateFormatter.timeStyle = .short
-        let date = dateFormatter.string(from: NSDate() as Date)
-        let savePath = (documentDirectory as NSString).appendingPathComponent("mergeVideo-\(date).mov")
-        let url = NSURL(fileURLWithPath: savePath)
-        
-        guard let exporter = AVAssetExportSession(asset: mergeComposition, presetName: AVAssetExportPresetHighestQuality) else { return }
-        exporter.outputURL = url as URL
-        exporter.outputFileType = AVFileTypeQuickTimeMovie
-        exporter.shouldOptimizeForNetworkUse = true
-        exporter.videoComposition = themeVideoComposition
-        
-        exporter.exportAsynchronously() {
-            
-            let player:AVPlayer! = AVPlayer(url: exporter.outputURL!)
-            self.customView.playerLayer.player = player
-            player.play()
-            DispatchQueue.main.async() { _ in
-                self.exportDidFinish(session: exporter)
-            }
-        }
     }
     
     func createComposition() {
@@ -529,7 +285,32 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         mutableVideoComposition.renderSize = CGSize(width: naturalSizeFirst.width, height: naturalSizeFirst.height)
         mutableVideoComposition.frameDuration = CMTimeMake(1,30)
         
-        // Check the first video track's preferred transform to determine if it was recorded in portrait mode.
+        // Add TEXT
+        
+        let title = String("SIRACHA!")
+        let titleLayer = CATextLayer()
+        titleLayer.string = title
+        titleLayer.frame =  CGRect(x: 0, y: 0, width: naturalSizeFirst.width, height: naturalSizeFirst.height)
+        let fontName: CFString = "GillSans-UltraBold" as CFString
+        let fontSize = CGFloat(36)
+        titleLayer.font = CTFontCreateWithName(fontName, fontSize, nil)
+        titleLayer.alignmentMode = kCAAlignmentCenter
+        titleLayer.foregroundColor = UIColor.white.cgColor
+        
+        let backgroundLayer = CALayer()
+        backgroundLayer.frame = CGRect(x: 0, y: 0, width: naturalSizeFirst.width, height: naturalSizeFirst.height)
+        backgroundLayer.masksToBounds = true
+        backgroundLayer.addSublayer(titleLayer)
+        
+        let parentLayer = CALayer()
+        let videoLayer = CALayer()
+        parentLayer.frame =  CGRect(x: 0, y: 0, width: naturalSizeFirst.width, height: naturalSizeFirst.height)
+        videoLayer.frame =  CGRect(x: 0, y: 0, width: naturalSizeFirst.width, height: naturalSizeFirst.height)
+        
+        parentLayer.addSublayer(videoLayer)
+        parentLayer.addSublayer(backgroundLayer)
+        
+        mutableVideoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
         
         // Get path
         let documentDirectory = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
