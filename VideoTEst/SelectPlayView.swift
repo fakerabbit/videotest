@@ -75,6 +75,13 @@ class SelectPlayView: UIView, UITextFieldDelegate {
         mergeSave.frame = CGRect(x: play.frame.minX, y: textField.frame.maxY + 10, width: mergeSave.frame.size.width, height: mergeSave.frame.size.height)
     }
     
+    func reloadPlayer() {
+        self.playerLayer.removeFromSuperlayer()
+        self.playerLayer = AVPlayerLayer()
+        videoView.layer.addSublayer(playerLayer)
+        self.layoutSubviews()
+    }
+    
     // MARK:- TextField delegate
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {

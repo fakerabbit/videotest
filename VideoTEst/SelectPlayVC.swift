@@ -81,7 +81,9 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
                 self.videoAsset = avAsset
                 self.videoURL = (info[UIImagePickerControllerMediaURL] as! NSURL) as URL
                 
-                let player:AVPlayer! = AVPlayer(url: (info[UIImagePickerControllerMediaURL] as! NSURL) as URL!)
+                //let player:AVPlayer! = AVPlayer(url: (info[UIImagePickerControllerMediaURL] as! NSURL) as URL!)
+                let playerItem: AVPlayerItem = AVPlayerItem(asset: avAsset)
+                let player:AVPlayer! = AVPlayer(playerItem: playerItem)
                 /*let playerViewController = AVPlayerViewController()
                 playerViewController.player = player
                 self.present(playerViewController, animated: true, completion: {
@@ -101,7 +103,7 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         titleLayer.string = title
         titleLayer.frame =  CGRect(x: pad, y: pad, width: size.width - pad * 2, height: size.height - pad * 2)
         let fontName: CFString = "GillSans-UltraBold" as CFString
-        let fontSize: CGFloat = 24
+        let fontSize: CGFloat = 28
         titleLayer.font = CTFontCreateWithName(fontName, fontSize, nil)
         titleLayer.alignmentMode = kCAAlignmentCenter
         titleLayer.foregroundColor = UIColor.white.cgColor
@@ -211,14 +213,26 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
         debugPrint("export did finish...")
         
         if session.status == AVAssetExportSessionStatus.completed {
+            
+            //self.customView.reloadPlayer()
             let outputURL = session.outputURL
-            let player:AVPlayer! = AVPlayer(url: outputURL!)
-            self.customView.playerLayer.player = player
-            player.play()
+            //let player:AVPlayer! = AVPlayer(url: outputURL!)
+            //self.customView.playerLayer.player = player
+            //let playerItem: AVPlayerItem = AVPlayerItem(url: outputURL!)
+            //self.customView.playerLayer.player?.replaceCurrentItem(with: playerItem)
+            //player.play()
+            //self.customView.playerLayer.player?.play()
             PHPhotoLibrary.shared().performChanges({
                 
                 PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: outputURL!)
             }, completionHandler: { success, error in
+                
+                let avAsset: AVAsset = AVAsset(url: outputURL!)
+                avAsset.loadValuesAsynchronously(forKeys: ["duration"], completionHandler: {
+                    let playerItem: AVPlayerItem = AVPlayerItem(asset: avAsset)
+                    self.customView.playerLayer.player?.replaceCurrentItem(with: playerItem)
+                    self.customView.playerLayer.player?.play()
+                })
                 
                 var title = ""
                 var message = ""
