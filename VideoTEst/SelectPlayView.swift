@@ -10,8 +10,9 @@ import Foundation
 import UIKit
 import AVKit
 import MediaPlayer
+import ICGVideoTrimmer
 
-class SelectPlayView: UIView, UITextFieldDelegate {
+class SelectPlayView: UIView, UITextFieldDelegate, ICGVideoTrimmerDelegate {
     
     lazy var play: UIButton! = {
         let b = UIButton(type: .roundedRect)
@@ -28,6 +29,7 @@ class SelectPlayView: UIView, UITextFieldDelegate {
     
     lazy var playerLayer: AVPlayerLayer! = {
        let p = AVPlayerLayer()
+        p.contentsGravity = AVLayerVideoGravityResizeAspect
         return p
     }()
     
@@ -45,6 +47,22 @@ class SelectPlayView: UIView, UITextFieldDelegate {
         b.sizeToFit()
         return b
     }()
+    
+    var asset: AVAsset! {
+        didSet {
+            self.trimmerView = ICGVideoTrimmerView(frame: CGRect.zero)
+            trimmerView.asset = asset
+            trimmerView.themeColor = UIColor.lightGray
+            trimmerView.delegate = self
+            trimmerView.showsRulerView = true
+            trimmerView.trackerColor = UIColor.cyan
+            self.addSubview(trimmerView)
+            self.layoutSubviews()
+            trimmerView.resetSubviews()
+        }
+    }
+    
+    var trimmerView: ICGVideoTrimmerView!
     
     /*
      * MARK:- Init
@@ -73,6 +91,9 @@ class SelectPlayView: UIView, UITextFieldDelegate {
         playerLayer.frame = videoView.frame
         textField.frame = CGRect(x: play.frame.minX, y: play.frame.maxY + 10, width: w - 40, height: 40)
         mergeSave.frame = CGRect(x: play.frame.minX, y: textField.frame.maxY + 10, width: mergeSave.frame.size.width, height: mergeSave.frame.size.height)
+        if trimmerView != nil {
+            trimmerView.frame = CGRect(x: 0, y: mergeSave.frame.maxY + 5, width: w, height: 100)
+        }
     }
     
     func reloadPlayer() {
@@ -87,5 +108,12 @@ class SelectPlayView: UIView, UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
         return true
+    }
+    
+    // MARK:- ICGVideoTrimmerDelegate 
+    
+    func trimmerView(_ trimmerView: ICGVideoTrimmerView!, didChangeLeftPosition startTime: CGFloat, rightPosition endTime: CGFloat) {
+        
+        
     }
 }

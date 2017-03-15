@@ -80,6 +80,7 @@ class SelectPlayVC: UIViewController, UIImagePickerControllerDelegate, UINavigat
                 let avAsset = AVAsset(url:(info[UIImagePickerControllerMediaURL] as! NSURL) as URL)
                 self.videoAsset = avAsset
                 self.videoURL = (info[UIImagePickerControllerMediaURL] as! NSURL) as URL
+                self.customView.asset = avAsset
                 
                 //let player:AVPlayer! = AVPlayer(url: (info[UIImagePickerControllerMediaURL] as! NSURL) as URL!)
                 let playerItem: AVPlayerItem = AVPlayerItem(asset: avAsset)
